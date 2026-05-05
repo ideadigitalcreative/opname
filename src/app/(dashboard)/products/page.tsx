@@ -24,6 +24,7 @@ export default async function ProductsPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const query = getSearchValue(resolvedSearchParams.q).toLowerCase();
   const status = getSearchValue(resolvedSearchParams.status);
