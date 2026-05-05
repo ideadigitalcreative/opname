@@ -2,6 +2,11 @@
 
 import { CheckCircle, Clock, Package } from "lucide-react";
 
+interface ProductDetail {
+  productName: string;
+  qty: number;
+}
+
 interface HistoryItem {
   id: string;
   kodeTransaksi: string;
@@ -11,6 +16,7 @@ interface HistoryItem {
   qty: number;
   status: string;
   keperluan: string;
+  productDetails: ProductDetail[];
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -38,6 +44,7 @@ export function UserHistory({ items }: { items: HistoryItem[] }) {
     <div className="space-y-2">
       {items.map((item) => {
         const cfg = statusConfig[item.status] ?? statusConfig.submitted;
+        const hasDetails = item.productDetails && item.productDetails.length > 0;
         return (
           <div
             key={item.id}
@@ -61,6 +68,15 @@ export function UserHistory({ items }: { items: HistoryItem[] }) {
                   {cfg.label}
                 </span>
               </div>
+              {hasDetails && item.productDetails.length > 1 && (
+                <div className="mt-1.5 space-y-0.5">
+                  {item.productDetails.map((detail, idx) => (
+                    <p key={idx} className="text-xs text-slate-600">
+                      {idx + 1}. {detail.productName} &times; {detail.qty}
+                    </p>
+                  ))}
+                </div>
+              )}
               <p className="mt-0.5 text-xs text-slate-500">
                 {item.kodeTransaksi} &middot; {item.lokasi} &middot; Qty: {item.qty}
               </p>

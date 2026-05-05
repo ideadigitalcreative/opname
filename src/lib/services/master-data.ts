@@ -1840,6 +1840,11 @@ export async function getAdjustmentsCollection(): Promise<AdjustmentsResult> {
   };
 }
 
+export interface StockOutProductDetail {
+  productName: string;
+  qty: number;
+}
+
 export interface UserStockOutHistoryItem {
   id: string;
   kodeTransaksi: string;
@@ -1849,6 +1854,7 @@ export interface UserStockOutHistoryItem {
   qty: number;
   status: string;
   keperluan: string;
+  productDetails: StockOutProductDetail[];
 }
 
 export interface UserStockOutHistoryResult {
@@ -1926,6 +1932,10 @@ export async function getUserStockOutHistory(userId: string): Promise<UserStockO
       qty: totalQty,
       status: row.status,
       keperluan: row.keperluan ?? "-",
+      productDetails: itemsRow.map((item) => ({
+        productName: item.productName,
+        qty: item.qty,
+      })),
     };
   });
 
