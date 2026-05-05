@@ -120,7 +120,7 @@ FROM (VALUES
   ('PRD-030', 'Tips 100 mikron')
 ) AS v(sku, nama_produk)
 WHERE lower(p.sku) = lower(v.sku)
-  AND p.nama_produk != v.nama_produk;
+  AND p.nama_produk IS DISTINCT FROM v.nama_produk;
 
 -- STOK AWAL di Penyimpanan LAB-Mikro (LMR-01)
 -- Insert stok baru, atau update jika sudah ada

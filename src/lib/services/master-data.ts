@@ -464,7 +464,7 @@ export async function getProductsCollection(): Promise<CollectionResult<Product>
       id: item.id,
       sku: item.sku,
       barcodeProduk: item.barcode_produk ?? "-",
-      namaProduk: item.nama_produk,
+      namaProduk: item.nama_produk ?? "-",
       kategoriId: item.kategori_id ?? "",
       kategori: getRelationName(item.categories, "nama_kategori"),
       satuanId: item.satuan_id ?? "",

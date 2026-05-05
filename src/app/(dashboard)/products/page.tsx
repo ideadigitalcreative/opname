@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { DeleteButton } from "@/components/ui/delete-button";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -7,6 +8,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
 import { getProductFormOptions, getProductsCollection } from "@/lib/services/master-data";
 import { createProductAction, updateProductAction, deleteProductAction } from "./actions";
+
+export const dynamic = "force-dynamic";
 
 function getSearchValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
