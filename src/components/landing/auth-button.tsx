@@ -1,33 +1,17 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { LayoutDashboard, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
-
-function getBrowserClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, {
-    auth: { persistSession: true, autoRefreshToken: true },
-  });
-}
 
 export function AuthButton() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const client = getBrowserClient();
-    if (!client) {
-      const hasRole = document.cookie.includes("opname-role=");
-      setIsLoggedIn(hasRole);
-      return;
-    }
-
-    client.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
+    fetch("/api/auth-check")
+      .then((res) => res.json())
+      .then((data) => setIsLoggedIn(Boolean(data.isLoggedIn)))
+      .catch(() => setIsLoggedIn(false));
   }, []);
 
   if (isLoggedIn === null) {

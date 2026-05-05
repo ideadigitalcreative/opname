@@ -331,6 +331,15 @@ function getFallbackNote() {
   return "Mode demo aktif karena session Supabase belum login atau akses tabel belum tersedia.";
 }
 
+async function getPublicSupabase() {
+  if (!hasSupabaseEnv()) {
+    return null;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  return supabase;
+}
+
 async function getAuthenticatedSupabase() {
   if (!hasSupabaseEnv()) {
     return null;
@@ -931,9 +940,9 @@ export async function getProductStocksCollection(): Promise<CollectionResult<Pro
 }
 
 export async function getLandingOverview(): Promise<LandingOverviewResult> {
-  const session = await getAuthenticatedSupabase();
+  const supabase = await getPublicSupabase();
 
-  if (!session) {
+  if (!supabase) {
     const totalStok = mockProductStocks.reduce((acc, item) => acc + item.qty, 0);
     const totalProduk = mockProducts.length;
     const totalLokasi = mockLocations.length;
@@ -1016,11 +1025,11 @@ export async function getLandingOverview(): Promise<LandingOverviewResult> {
 
   const [{ data: products, error: productError }, { data: stocks, error: stockError }] =
     await Promise.all([
-      session.supabase
+      supabase
         .from("products")
         .select("id, sku, nama_produk, minimum_stok, status_aktif")
         .eq("status_aktif", true),
-      session.supabase.from("product_stocks").select("product_id, qty"),
+      supabase.from("product_stocks").select("product_id, qty"),
     ]);
 
   if (productError || stockError || !products || !stocks) {
@@ -1055,7 +1064,7 @@ export async function getLandingOverview(): Promise<LandingOverviewResult> {
   const totalProduk = mappedProducts.length;
   const totalStok = mappedProducts.reduce((acc, item) => acc + item.totalStok, 0);
 
-  const { count: totalLokasi } = await session.supabase
+  const { count: totalLokasi } = await supabase
     .from("locations")
     .select("id", { count: "exact", head: true })
     .eq("status_aktif", true);
@@ -1076,7 +1085,7 @@ export async function getLandingOverview(): Promise<LandingOverviewResult> {
     .sort((a, b) => a.totalStok - b.totalStok)
     .slice(0, 8);
 
-  const { data: movements } = await session.supabase
+  const { data: movements } = await supabase
     .from("stock_movements")
     .select(
       "id, created_at, movement_type, source_type, qty_change, qty_after, products(nama_produk), locations(nama_lokasi)",
