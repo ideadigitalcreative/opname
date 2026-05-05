@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,6 +16,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sistem Manajemen Stok Gudang",
   description: "Dashboard laporan stok, mutasi, pengambilan, dan stock opname.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Stok Opname",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -27,7 +44,13 @@ export default function RootLayout({
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full">{children}</body>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+      </head>
+      <body className="h-full">
+        {children}
+        <PwaInstallPrompt />
+      </body>
     </html>
   );
 }
