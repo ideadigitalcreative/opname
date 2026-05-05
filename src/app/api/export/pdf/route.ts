@@ -38,19 +38,20 @@ export async function GET(request: Request) {
       title = "Laporan Data Produk";
       const { data } = await supabase
         .from("products")
-        .select("sku, nama_produk, categories(nama_kategori), units(nama_satuan), stok_minimum, status_aktif")
+        .select("sku, nama_produk, categories(nama_kategori), units(nama_satuan), minimum_stok, status_aktif")
         .order("created_at", { ascending: false });
 
-      headers = [["SKU", "Nama Produk", "Kategori", "Satuan", "Stok Min", "Status"]];
-      body = (data ?? []).map((item) => {
+      headers = [["No", "SKU", "Nama Produk", "Kategori", "Satuan", "Stok Min", "Status"]];
+      body = (data ?? []).map((item, index) => {
         const cat = getRelationField(item.categories, "nama_kategori");
         const unit = getRelationField(item.units, "nama_satuan");
         return [
+          index + 1,
           item.sku,
           item.nama_produk,
           safeStr(cat),
           safeStr(unit),
-          item.stok_minimum,
+          safeNum(item.minimum_stok),
           item.status_aktif ? "Aktif" : "Nonaktif",
         ];
       });
@@ -63,17 +64,18 @@ export async function GET(request: Request) {
         .select("products(sku, nama_produk), locations(kode_lokasi, nama_lokasi), qty")
         .order("updated_at", { ascending: false });
 
-      headers = [["SKU", "Nama Produk", "Lokasi", "Qty"]];
-      body = (data ?? []).map((item) => {
+      headers = [["No", "SKU", "Nama Produk", "Lokasi", "Qty"]];
+      body = (data ?? []).map((item, index) => {
         const product = item.products && typeof item.products === "object" && !Array.isArray(item.products)
           ? (item.products as Record<string, unknown>) : {};
         const location = item.locations && typeof item.locations === "object" && !Array.isArray(item.locations)
           ? (item.locations as Record<string, unknown>) : {};
         return [
+          index + 1,
           safeStr(product.sku),
           safeStr(product.nama_produk),
           `${safeStr(location.kode_lokasi)} - ${safeStr(location.nama_lokasi)}`,
-          item.qty,
+          safeNum(item.qty),
         ];
       });
       break;
@@ -139,23 +141,41 @@ export async function GET(request: Request) {
         const autoTable = (await import("jspdf-autotable")).default;
 
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
 
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text("Laporan Lengkap Stok Gudang", 14, 18);
+        const generatedAt = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
 
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100);
-        doc.text(`Digenerate pada ${new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" })}`, 14, 26);
-        doc.setTextColor(0);
+        function drawPageHeader(d: InstanceType<typeof jsPDF>) {
+          d.setFontSize(16);
+          d.setFont("helvetica", "bold");
+          d.text("Laporan Lengkap Stok Gudang", 14, 15);
+          d.setFontSize(8);
+          d.setFont("helvetica", "normal");
+          d.setTextColor(100);
+          d.text(`Digenerate pada ${generatedAt}`, 14, 21);
+          d.setTextColor(0);
+        }
+
+        function drawPageFooter(d: InstanceType<typeof jsPDF>, pageNum: number, totalPagesCount: number) {
+          d.setFontSize(7);
+          d.setFont("helvetica", "normal");
+          d.setTextColor(150);
+          d.text("Sistem Manajemen Stok Gudang", 14, pageHeight - 8);
+          d.text(`Halaman ${pageNum} dari ${totalPagesCount}`, pageWidth - 14, pageHeight - 8, { align: "right" });
+          d.setDrawColor(200);
+          d.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+          d.setTextColor(0);
+        }
+
+        drawPageHeader(doc);
 
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text("Ringkasan", 14, 36);
+        doc.text("Ringkasan", 14, 30);
 
         autoTable(doc, {
-          startY: 40,
+          startY: 34,
           head: [["Metrik", "Nilai"]],
           body: [
             ["Total Produk Aktif", String(totalProduk)],
@@ -169,21 +189,14 @@ export async function GET(request: Request) {
           styles: { fontSize: 9, cellPadding: 3 },
           headStyles: { fillColor: [79, 70, 229] },
           alternateRowStyles: { fillColor: [248, 250, 252] },
-          margin: { left: 14, right: 14 },
+          margin: { left: 14, right: 14, top: 25, bottom: 16 },
           columnStyles: {
             0: { fontStyle: "bold", cellWidth: 80 },
             1: { halign: "right" },
           },
         });
 
-        const ringkasanEndY = (doc as unknown as Record<string, { previous?: { finalY?: number } }>).lastAutoTable?.previous?.finalY ?? 40;
-
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("Detail Per Produk", 14, ringkasanEndY + 10);
-
-        headers = [["No", "SKU", "Nama Produk", "Kategori", "Satuan", "Qty Masuk", "Qty Keluar", "Sisa Stok", "Stok Min", "Status"]];
-        body = (products ?? []).map((item, index) => {
+        const detailRows = (products ?? []).map((item, index) => {
           const cat = getRelationField(item.categories, "nama_kategori");
           const unit = getRelationField(item.units, "nama_satuan");
           const masuk = masukMap.get(item.id) ?? 0;
@@ -197,7 +210,6 @@ export async function GET(request: Request) {
             item.sku,
             item.nama_produk,
             safeStr(cat),
-            safeStr(unit),
             masuk,
             keluar,
             sisa,
@@ -206,23 +218,33 @@ export async function GET(request: Request) {
           ];
         });
 
+        doc.addPage();
+        drawPageHeader(doc);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("Detail Per Produk", 14, 30);
+
         autoTable(doc, {
-          startY: ringkasanEndY + 14,
-          head: headers,
-          body: body,
-          styles: { fontSize: 7.5, cellPadding: 2 },
-          headStyles: { fillColor: [79, 70, 229] },
+          startY: 34,
+          head: [["No", "SKU", "Nama Produk", "Kategori", "Masuk", "Keluar", "Sisa", "Min", "Status"]],
+          body: detailRows,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [79, 70, 229], fontSize: 8 },
           alternateRowStyles: { fillColor: [248, 250, 252] },
-          margin: { left: 14, right: 14 },
+          margin: { left: 14, right: 14, top: 25, bottom: 16 },
           columnStyles: {
-            0: { halign: "center", cellWidth: 10 },
-            5: { halign: "right" },
-            6: { halign: "right" },
-            7: { halign: "right" },
-            8: { halign: "right" },
+            0: { halign: "center", cellWidth: 12 },
+            1: { cellWidth: 28 },
+            2: { cellWidth: 65 },
+            3: { cellWidth: 40 },
+            4: { halign: "right", cellWidth: 22 },
+            5: { halign: "right", cellWidth: 22 },
+            6: { halign: "right", cellWidth: 22 },
+            7: { halign: "right", cellWidth: 20 },
+            8: { halign: "center", cellWidth: 22 },
           },
           didParseCell(data) {
-            if (data.section === "body" && data.column.index === 9) {
+            if (data.section === "body" && data.column.index === 8) {
               const val = String(data.cell.raw);
               if (val === "HABIS") {
                 data.cell.styles.textColor = [220, 38, 38];
@@ -235,20 +257,16 @@ export async function GET(request: Request) {
               }
             }
           },
+          didDrawPage(data) {
+            drawPageHeader(data.doc);
+            drawPageFooter(data.doc, data.pageNumber, (data.doc as InstanceType<typeof jsPDF>).getNumberOfPages());
+          },
         });
 
-        const detailEndY = (doc as unknown as Record<string, { previous?: { finalY?: number } }>).lastAutoTable?.previous?.finalY ?? 40;
-        const pageHeight = doc.internal.pageSize.getHeight();
-
-        if (detailEndY + 20 < pageHeight) {
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "italic");
-          doc.setTextColor(150);
-          doc.text(
-            "Dokumen ini digenerate otomatis oleh Sistem Manajemen Stok Gudang.",
-            14,
-            detailEndY + 10,
-          );
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          drawPageFooter(doc, i, totalPages);
         }
 
         const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
@@ -276,23 +294,53 @@ export async function GET(request: Request) {
     const autoTable = (await import("jspdf-autotable")).default;
 
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const generatedAt = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
 
-    doc.setFontSize(16);
-    doc.text(title, 14, 15);
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text(`Digenerate pada ${new Date().toLocaleString("id-ID")}`, 14, 22);
-    doc.setTextColor(0);
+    function drawHeader(d: InstanceType<typeof jsPDF>) {
+      d.setFontSize(16);
+      d.setFont("helvetica", "bold");
+      d.text(title, 14, 15);
+      d.setFontSize(8);
+      d.setFont("helvetica", "normal");
+      d.setTextColor(100);
+      d.text(`Digenerate pada ${generatedAt}`, 14, 21);
+      d.setTextColor(0);
+    }
+
+    function drawFooter(d: InstanceType<typeof jsPDF>, pageNum: number, totalPagesCount: number) {
+      d.setFontSize(7);
+      d.setFont("helvetica", "normal");
+      d.setTextColor(150);
+      d.text("Sistem Manajemen Stok Gudang", 14, pageHeight - 8);
+      d.text(`Halaman ${pageNum} dari ${totalPagesCount}`, pageWidth - 14, pageHeight - 8, { align: "right" });
+      d.setDrawColor(200);
+      d.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+      d.setTextColor(0);
+    }
+
+    drawHeader(doc);
 
     autoTable(doc, {
-      startY: 28,
+      startY: 26,
       head: headers,
       body: body,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [79, 70, 229] },
       alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, top: 25, bottom: 16 },
+      didDrawPage(data) {
+        drawHeader(data.doc);
+        drawFooter(data.doc, data.pageNumber, (data.doc as InstanceType<typeof jsPDF>).getNumberOfPages());
+      },
     });
+
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      drawFooter(doc, i, totalPages);
+    }
 
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
 
