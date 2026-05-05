@@ -1,36 +1,226 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Manajemen Stok Gudang Web
 
-## Getting Started
+Aplikasi manajemen stok gudang berbasis **Next.js App Router**, **TypeScript**, dan dipersiapkan untuk **Supabase** sebagai authentication, PostgreSQL, RLS, storage, serta proses stok yang aman dari double count.
 
-First, run the development server:
+Fondasi saat ini sudah mencakup:
+
+- Shell dashboard responsif
+- Sidebar desktop untuk admin dan petugas gudang
+- Mobile navigation untuk penggunaan di HP
+- Pembeda role `admin`, `petugas_gudang`, dan `user`
+- Halaman utama untuk dashboard, master data, stok per lokasi, stok masuk, ambil barang, mutasi stok, stock opname, laporan, user, audit log, dan pengaturan
+- SQL migration Supabase lengkap
+- Seed data awal untuk kategori, satuan, lokasi, dan barang
+
+## Stack
+
+- Next.js 16 App Router
+- TypeScript
+- Tailwind CSS
+- Supabase SSR + Supabase JS
+- Zod
+- Lucide React
+- ExcelJS / jsPDF untuk fondasi export
+
+## Struktur Folder
+
+```text
+src/
+  app/
+    (auth)/
+      login/
+    (dashboard)/
+      dashboard/
+      products/
+      categories/
+      units/
+      locations/
+      product-stocks/
+      stock-in/
+      stock-out/
+      movements/
+      opname/
+        sessions/
+        input/
+        review/
+      adjustments/
+      reports/
+      users/
+      audit-logs/
+      settings/
+  components/
+    layout/
+    ui/
+    opname/
+  lib/
+    services/
+    supabase/
+    utils/
+  types/
+    app/
+supabase/
+  migrations/
+  seed/
+```
+
+## Setup Lokal
+
+1. Install dependency
+
+```bash
+npm install
+```
+
+2. Copy env file
+
+```bash
+copy .env.example .env.local
+```
+
+3. Isi environment Supabase di `.env.local`
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
+```
+
+4. Jalankan development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Buka aplikasi di:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Login Demo Lokal
 
-## Learn More
+Jika env Supabase belum diisi, aplikasi tetap bisa diuji dalam mode lokal:
 
-To learn more about Next.js, take a look at the following resources:
+1. Buka `/login`
+2. Isi nama pengguna
+3. Pilih role:
+   - `admin`
+   - `petugas_gudang`
+   - `user`
+4. Sistem menyimpan role ke cookie lokal dan menampilkan menu sesuai role
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Setup Supabase
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Buat project baru di Supabase
+2. Jalankan migration SQL dari:
 
-## Deploy on Vercel
+```text
+supabase/migrations/202604290001_init_stock_opname.sql
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Jalankan seed data awal dari:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+supabase/seed/seed.sql
+```
+
+4. Pastikan bucket storage `opname-photos` tersedia
+
+Migration saat ini sudah mencakup:
+
+- Enum role, jenis stok masuk, status transaksi keluar, status sesi opname, hasil opname, jenis mutasi, sumber mutasi, dan mode issue
+- Tabel:
+  - `profiles`
+  - `categories`
+  - `units`
+  - `locations`
+  - `products`
+  - `product_stocks`
+  - `stock_in_transactions`
+  - `stock_in_items`
+  - `stock_out_transactions`
+  - `stock_out_items`
+  - `stock_movements`
+  - `opname_sessions`
+  - `opname_items`
+  - `audit_logs`
+  - `app_settings`
+- Trigger `updated_at`
+- Trigger auto-create profile dari `auth.users`
+- Trigger sinkronisasi `selisih` dan `status_hasil` opname
+- RPC `apply_stock_in()`
+- RPC `apply_stock_out()`
+- RPC `apply_opname_correction()`
+- RLS policy dasar
+- Storage bucket policy untuk `opname-photos`
+
+## Perintah Penting
+
+Lint:
+
+```bash
+npm run lint
+```
+
+Build produksi:
+
+```bash
+npm run build
+```
+
+## Route Utama
+
+- `/login`
+- `/dashboard`
+- `/products`
+- `/categories`
+- `/units`
+- `/locations`
+- `/product-stocks`
+- `/stock-in`
+- `/stock-out`
+- `/movements`
+- `/opname/sessions`
+- `/opname/input`
+- `/opname/review`
+- `/adjustments`
+- `/reports`
+- `/users`
+- `/audit-logs`
+- `/settings`
+
+## Status Implementasi Saat Ini
+
+Sudah tersedia:
+
+- Shell dashboard responsif
+- Role-based navigation
+- Proxy proteksi route
+- Master data page skeleton
+- Stok per lokasi page skeleton
+- Stok masuk page skeleton
+- Ambil barang mobile-friendly page skeleton
+- Mutasi stok page skeleton
+- Sesi opname page skeleton
+- Input opname mobile-friendly skeleton
+- Review hasil opname
+- Halaman koreksi stok
+- Halaman laporan
+- SQL migration dan seed
+
+Masih akan dilanjutkan:
+
+- Integrasi penuh Supabase Auth
+- CRUD nyata ke database
+- Upload foto ke storage
+- Scan barcode browser
+- Approval aksi server
+- Export CSV/PDF/Excel nyata
+- Audit log otomatis dari aksi server
+
+## Deploy
+
+Deploy-ready untuk Vercel dengan catatan:
+
+- Tambahkan env Supabase di project Vercel
+- Pastikan migration dan storage policy sudah diterapkan di Supabase
+- Gunakan domain production Supabase yang benar
