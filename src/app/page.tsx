@@ -24,6 +24,7 @@ import {
 } from "@/lib/services/master-data";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentRoleFromCookie } from "@/lib/supabase/auth";
 import { formatNumber } from "@/lib/utils/format-number";
 
 function formatChange(value: number) {
@@ -104,8 +105,10 @@ export default async function Home({
     return user?.id ?? null;
   })();
 
+  const role = await getCurrentRoleFromCookie();
   const overview = await getLandingOverview();
   const userHistory = authUserId ? await getUserStockOutHistory(authUserId) : null;
+  const isStaff = role === "admin" || role === "petugas_gudang";
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -146,7 +149,7 @@ export default async function Home({
 
         {!!authUserId && <BarcodeScanPanel />}
 
-        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <section className={`grid grid-cols-2 gap-3 sm:gap-4 ${isStaff ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
           <StatCard
             label="Total Produk"
             value={formatNumber(overview.totalProduk)}
@@ -165,12 +168,14 @@ export default async function Home({
             icon={<TriangleAlert className="h-5 w-5" />}
             tone="amber"
           />
-          <StatCard
-            label="Mutasi Terbaru"
-            value={formatNumber(overview.recentMovements.length)}
-            icon={<Clock className="h-5 w-5" />}
-            tone="rose"
-          />
+          {isStaff && (
+            <StatCard
+              label="Mutasi Terbaru"
+              value={formatNumber(overview.recentMovements.length)}
+              icon={<Clock className="h-5 w-5" />}
+              tone="rose"
+            />
+          )}
         </section>
 
         {!!authUserId && userHistory && userHistory.items.length > 0 && (
@@ -239,6 +244,7 @@ export default async function Home({
           </section>
         )}
 
+        {isStaff && (
         <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-5 xl:grid-cols-2">
           <div className="lg:col-span-3 xl:col-span-1">
             <SimpleBarChart
@@ -298,6 +304,7 @@ export default async function Home({
             </div>
           </div>
         </section>
+        )}
 
         <footer className="mt-10 border-t border-slate-200 py-6 text-center sm:mt-12">
           <div className="flex items-center justify-center gap-2">

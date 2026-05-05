@@ -309,12 +309,13 @@ export function BarcodeScanPanel() {
               </button>
             </div>
 
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="flex min-h-0 flex-1 flex-col"
+            >
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-              <form
-                ref={formRef}
-                onSubmit={handleSubmit}
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -595,51 +596,54 @@ export function BarcodeScanPanel() {
                     </p>
                   </div>
                 )}
-
-                {selected.length > 0 && (
-                  <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                    <label className="space-y-1.5 text-sm">
-                      <span className="font-medium text-slate-700">
-                        Keperluan <span className="text-red-500">*</span>
-                      </span>
-                      <input
-                        required
-                        value={keperluan}
-                        onChange={(e) => setKeperluan(e.target.value)}
-                        placeholder="Contoh: instalasi / perbaikan / operasional"
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-                      />
-                    </label>
-                    <label className="space-y-1.5 text-sm">
-                      <span className="font-medium text-slate-700">Catatan</span>
-                      <input
-                        value={catatan}
-                        onChange={(e) => setCatatan(e.target.value)}
-                        placeholder="Opsional"
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
-                      />
-                    </label>
-                    <Button
-                      type="submit"
-                      disabled={isPending || !keperluan.trim()}
-                      className="w-full"
-                    >
-                      {isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Memproses...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Ambil Barang ({selected.length} item)
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </form>
+              </div>
             </div>
+
+            {selected.length > 0 && (
+              <div className="border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium text-slate-700">
+                      Keperluan <span className="text-red-500">*</span>
+                    </span>
+                    <input
+                      required
+                      value={keperluan}
+                      onChange={(e) => setKeperluan(e.target.value)}
+                      placeholder="Instalasi / perbaikan / ..."
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span className="font-medium text-slate-700">Catatan</span>
+                    <input
+                      value={catatan}
+                      onChange={(e) => setCatatan(e.target.value)}
+                      placeholder="Opsional"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                    />
+                  </label>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isPending || !keperluan.trim()}
+                  className="w-full"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Ambil Barang ({selected.length} item)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            </form>
           </div>
         </div>
       )}
