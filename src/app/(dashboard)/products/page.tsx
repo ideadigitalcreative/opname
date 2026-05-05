@@ -40,8 +40,7 @@ export default async function ProductsPage({
     const matchesQuery =
       !query ||
       item.namaProduk.toLowerCase().includes(query) ||
-      item.sku.toLowerCase().includes(query) ||
-      item.barcodeProduk.toLowerCase().includes(query);
+      item.sku.toLowerCase().includes(query);
 
     const matchesStatus =
       !status ||
@@ -96,7 +95,7 @@ export default async function ProductsPage({
             <SearchInput
               name="q"
               defaultValue={getSearchValue(resolvedSearchParams.q)}
-              placeholder="Cari nama, SKU, atau barcode..."
+              placeholder="Cari nama atau SKU..."
             />
           </div>
           <select
@@ -239,8 +238,8 @@ export default async function ProductsPage({
       {filteredProducts.length > 0 ? (
         <DataTable
           columns={[
+            { label: "No", className: "w-12 text-center" },
             { label: "SKU" },
-            { label: "Barcode", hideOnMobile: true },
             { label: "Nama Produk" },
             { label: "Kategori", hideOnMobile: true },
             { label: "Satuan", hideOnMobile: true },
@@ -249,9 +248,9 @@ export default async function ProductsPage({
             { label: "Status" },
             { label: "Aksi" },
           ]}
-          rows={filteredProducts.map((item) => [
+          rows={filteredProducts.map((item, index) => [
+            index + 1,
             item.sku,
-            item.barcodeProduk,
             item.namaProduk,
             item.kategori,
             item.satuan,
