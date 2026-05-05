@@ -29,7 +29,7 @@ function formatCellValue(value: ReactNode): ReactNode {
   }
 
   if (typeof value === "string") {
-    if (value.includes("T") && value.includes(":")) {
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(new Date(value).getTime())) {
       return formatDateTime(value);
     }
   }
