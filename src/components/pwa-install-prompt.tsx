@@ -8,6 +8,12 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+function isMobileDevice() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (typeof window !== "undefined" && window.innerWidth <= 768);
+}
+
 export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -15,6 +21,8 @@ export function PwaInstallPrompt() {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
+    if (!isMobileDevice()) return;
+
     const dismissed = localStorage.getItem("pwa-install-dismissed");
     if (dismissed === "true") {
       setIsDismissed(true);
