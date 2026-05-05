@@ -793,6 +793,8 @@ create policy "profiles_admin_delete" on public.profiles for delete to authentic
 -- CATEGORIES
 drop policy if exists "categories_read_authenticated" on public.categories;
 create policy "categories_read_authenticated" on public.categories for select to authenticated using (true);
+drop policy if exists "categories_public_read" on public.categories;
+create policy "categories_public_read" on public.categories for select to anon using (true);
 
 drop policy if exists "categories_admin_manage" on public.categories;
 create policy "categories_admin_manage" on public.categories for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -800,6 +802,8 @@ create policy "categories_admin_manage" on public.categories for all to authenti
 -- UNITS
 drop policy if exists "units_read_authenticated" on public.units;
 create policy "units_read_authenticated" on public.units for select to authenticated using (true);
+drop policy if exists "units_public_read" on public.units;
+create policy "units_public_read" on public.units for select to anon using (true);
 
 drop policy if exists "units_admin_manage" on public.units;
 create policy "units_admin_manage" on public.units for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -807,6 +811,8 @@ create policy "units_admin_manage" on public.units for all to authenticated usin
 -- LOCATIONS
 drop policy if exists "locations_read_authenticated" on public.locations;
 create policy "locations_read_authenticated" on public.locations for select to authenticated using (true);
+drop policy if exists "locations_public_read" on public.locations;
+create policy "locations_public_read" on public.locations for select to anon using (true);
 
 drop policy if exists "locations_admin_petugas_manage" on public.locations;
 create policy "locations_admin_petugas_manage" on public.locations for all to authenticated using (public.is_admin_or_petugas()) with check (public.is_admin_or_petugas());
@@ -814,6 +820,8 @@ create policy "locations_admin_petugas_manage" on public.locations for all to au
 -- PRODUCTS
 drop policy if exists "products_read_authenticated" on public.products;
 create policy "products_read_authenticated" on public.products for select to authenticated using (true);
+drop policy if exists "products_public_read" on public.products;
+create policy "products_public_read" on public.products for select to anon using (true);
 
 drop policy if exists "products_admin_manage" on public.products;
 create policy "products_admin_manage" on public.products for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -821,6 +829,9 @@ create policy "products_admin_manage" on public.products for all to authenticate
 -- PRODUCT STOCKS
 drop policy if exists "product_stocks_read_authenticated" on public.product_stocks;
 create policy "product_stocks_read_authenticated" on public.product_stocks for select to authenticated using (true);
+
+drop policy if exists "product_stocks_public_read" on public.product_stocks;
+create policy "product_stocks_public_read" on public.product_stocks for select to anon using (true);
 
 drop policy if exists "product_stocks_admin_manage" on public.product_stocks;
 create policy "product_stocks_admin_manage" on public.product_stocks for all to authenticated using (public.is_admin()) with check (public.is_admin());
@@ -866,7 +877,10 @@ create policy "stock_out_items_manage_policy" on public.stock_out_items for all 
 drop policy if exists "stock_movements_read_admin_petugas" on public.stock_movements;
 create policy "stock_movements_read_admin_petugas" on public.stock_movements for select to authenticated using (public.is_admin_or_petugas());
 
--- OPNAME SESSIONS
+drop policy if exists "stock_movements_public_read" on public.stock_movements;
+create policy "stock_movements_public_read" on public.stock_movements for select to anon using (true);
+
+--- OPNAME SESSIONS
 drop policy if exists "opname_sessions_read_admin_petugas" on public.opname_sessions;
 create policy "opname_sessions_read_admin_petugas" on public.opname_sessions for select to authenticated using (public.is_admin_or_petugas());
 
