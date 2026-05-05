@@ -35,27 +35,27 @@ export function SimpleBarChart({
             : "bg-slate-900";
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-        <p className="text-sm leading-6 text-slate-600">{description}</p>
+        <h2 className="text-base font-semibold text-slate-900 sm:text-lg">{title}</h2>
+        <p className="text-xs leading-6 text-slate-600 sm:text-sm">{description}</p>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-3 sm:mt-5">
         {items.map((item) => {
           const percent = clamp((item.value / maxValue) * 100, 0, 100);
 
           return (
-            <div key={item.label} className="space-y-2">
-              <div className="flex items-center justify-between gap-3 text-sm">
+            <div key={item.label} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
                 <span className="min-w-0 truncate font-medium text-slate-700">{item.label}</span>
                 <span className="shrink-0 text-slate-500">
                   {item.value.toLocaleString("id-ID")} {valueLabel}
                 </span>
               </div>
-              <div className="h-2.5 rounded-full bg-slate-100">
+              <div className="h-2 rounded-full bg-slate-100 sm:h-2.5">
                 <div
-                  className={`h-2.5 rounded-full ${toneClass}`}
+                  className={`h-2 rounded-full sm:h-2.5 ${toneClass}`}
                   style={{ width: `${percent}%` }}
                 />
               </div>

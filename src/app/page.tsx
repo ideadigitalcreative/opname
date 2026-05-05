@@ -1,8 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  BarChart3,
   Boxes,
   Clock,
   MapPin,
@@ -13,7 +10,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { DataTable } from "@/components/ui/data-table";
 import { SimpleBarChart } from "@/components/ui/simple-bar-chart";
 import { AuthButton } from "@/components/landing/auth-button";
 import { BarcodeScanPanel } from "@/components/forms/barcode-scan-panel";
@@ -26,11 +22,6 @@ import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentRoleFromCookie } from "@/lib/supabase/auth";
 import { formatNumber } from "@/lib/utils/format-number";
-
-function formatChange(value: number) {
-  const prefix = value > 0 ? "+" : "";
-  return `${prefix}${formatNumber(value)}`;
-}
 
 function StatCard({
   label,
@@ -245,8 +236,7 @@ export default async function Home({
         )}
 
         {isStaff && (
-        <section className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 lg:grid-cols-5 xl:grid-cols-2">
-          <div className="lg:col-span-3 xl:col-span-1">
+          <div className="mt-4 sm:mt-6">
             <SimpleBarChart
               title="Produk Dengan Stok Terbanyak"
               description="Top produk berdasarkan total qty di semua lokasi."
@@ -257,53 +247,6 @@ export default async function Home({
               }))}
             />
           </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5 lg:col-span-2 xl:col-span-1">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900 sm:text-lg">Mutasi Terbaru</h2>
-                <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
-                  Stok masuk, pengambilan, koreksi, dan opname.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              {overview.recentMovements.length > 0 ? (
-                <DataTable
-                  columns={["Produk", "Lokasi", "Tipe", "Perubahan", "Qty Sesudah"]}
-                  rows={overview.recentMovements.slice(0, 8).map((item) => [
-                    item.productName,
-                    item.locationName,
-                    item.sourceType.replaceAll("_", " "),
-                    <span
-                      key={`chg-${item.id}`}
-                      className={`inline-flex items-center gap-1 text-xs font-semibold ${
-                        item.qtyChange > 0 ? "text-emerald-600" : "text-rose-600"
-                      }`}
-                    >
-                      {item.qtyChange > 0 ? (
-                        <ArrowDownRight className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpRight className="h-3 w-3" />
-                      )}
-                      {formatChange(item.qtyChange)}
-                    </span>,
-                    item.qtyAfter,
-                  ])}
-                />
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 py-10 text-center">
-                  <BarChart3 className="mx-auto h-8 w-8 text-slate-300" />
-                  <h3 className="mt-3 text-base font-semibold text-slate-900">Belum ada mutasi</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Mutasi akan muncul setelah ada transaksi.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
         )}
 
         <footer className="mt-10 border-t border-slate-200 py-6 text-center sm:mt-12">
