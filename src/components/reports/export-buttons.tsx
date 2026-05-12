@@ -1,6 +1,7 @@
 "use client";
 
-import { FileDown, FileText, Table } from "lucide-react";
+import { FileText, Table } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 interface ExportButtonsProps {
   csvTypes: { label: string; type: string }[];
@@ -8,12 +9,31 @@ interface ExportButtonsProps {
 }
 
 export function ExportButtons({ csvTypes, pdfTypes }: ExportButtonsProps) {
+  const searchParams = useSearchParams();
+
+  function buildExportUrl(basePath: string, type: string) {
+    const params = new URLSearchParams();
+    params.set("type", type);
+
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const month = searchParams.get("month");
+    const location = searchParams.get("location");
+
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    if (month) params.set("month", month);
+    if (location) params.set("location", location);
+
+    return `${basePath}?${params.toString()}`;
+  }
+
   function handleExportCsv(type: string) {
-    window.open(`/api/export/csv?type=${type}`, "_blank");
+    window.open(buildExportUrl("/api/export/xlsx", type), "_blank");
   }
 
   function handleExportPdf(type: string) {
-    window.open(`/api/export/pdf?type=${type}`, "_blank");
+    window.open(buildExportUrl("/api/export/pdf", type), "_blank");
   }
 
   return (
@@ -26,7 +46,7 @@ export function ExportButtons({ csvTypes, pdfTypes }: ExportButtonsProps) {
           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:px-4 sm:py-2 sm:text-sm"
         >
           <Table className="h-3.5 w-3.5" />
-          CSV {item.label}
+          Excel {item.label}
         </button>
       ))}
       {pdfTypes.map((item) => (

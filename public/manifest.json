@@ -1,5 +1,5 @@
 {
-  "name": "Sistem Manajemen Stok Gudang",
+  "name": "Sistem Manajemen Stok",
   "short_name": "Stok Opname",
   "description": "Aplikasi manajemen stok gudang laboratorium - stok masuk, keluar, opname, dan laporan.",
   "start_url": "/",
@@ -8,6 +8,12 @@
   "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "/favicon-op.png",
+      "sizes": "150x150",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icons/icon-192.svg",
       "sizes": "192x192",

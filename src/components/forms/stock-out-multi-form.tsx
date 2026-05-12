@@ -55,14 +55,6 @@ export function StockOutMultiForm({
     );
   }
 
-  function updateCatatan(productId: string, catatan: string) {
-    setSelected((prev) =>
-      prev.map((s) =>
-        s.productId === productId ? { ...s, catatan } : s,
-      ),
-    );
-  }
-
   const unselected = availableItems.filter(
     (item) => !selected.find((s) => s.productId === item.productId),
   );

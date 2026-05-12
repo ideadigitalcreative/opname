@@ -1,5 +1,5 @@
 -- ============================================================
--- SISTEM MANAJEMEN STOK GUDANG
+-- Sistem Manajemen Stok 
 -- Script Setup Database Supabase Lengkap
 -- Jalankan seluruh script ini di Supabase SQL Editor
 -- ============================================================

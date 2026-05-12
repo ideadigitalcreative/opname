@@ -70,6 +70,7 @@ export function BarcodeScanPanel() {
   const detectorRef = useRef<BarcodeDetector | null>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastDetectedRef = useRef<string>("");
+  const locationsAbortRef = useRef<AbortController | null>(null);
 
   const stopCamera = useCallback(() => {
     if (scanIntervalRef.current) {
@@ -82,7 +83,34 @@ export function BarcodeScanPanel() {
     }
   }, []);
 
-  const startCamera = useCallback(async () => {
+  const abortLocationsFetch = useCallback(() => {
+    if (locationsAbortRef.current) {
+      locationsAbortRef.current.abort();
+      locationsAbortRef.current = null;
+    }
+  }, []);
+
+  async function ensureLocationsLoaded() {
+    if (locationLoading || locationList.length > 0) return;
+    abortLocationsFetch();
+    const controller = new AbortController();
+    locationsAbortRef.current = controller;
+    setLocationLoading(true);
+
+    try {
+      const res = await fetch("/api/locations", { signal: controller.signal });
+      const data = await res.json();
+      setLocationList(data.locations ?? []);
+    } catch {
+      // ignore
+    } finally {
+      if (!controller.signal.aborted) {
+        setLocationLoading(false);
+      }
+    }
+  }
+
+  async function startCamera() {
     setCameraError(null);
     stopCamera();
 
@@ -128,41 +156,19 @@ export function BarcodeScanPanel() {
         : "Gagal mengakses kamera. Pastikan perangkat memiliki kamera.";
       setCameraError(message);
     }
-  }, [stopCamera]);
+  }
 
   useEffect(() => {
     return () => {
       stopCamera();
+      abortLocationsFetch();
     };
-  }, [stopCamera]);
-
-  useEffect(() => {
-    if (scanMode === "camera") {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-  }, [scanMode, startCamera, stopCamera]);
-
-  useEffect(() => {
-    if (scanMode !== "manual" || locationList.length > 0) return;
-    let cancelled = false;
-    setLocationLoading(true);
-    fetch("/api/locations")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setLocationList(data.locations ?? []);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLocationLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [scanMode, locationList.length]);
+  }, [abortLocationsFetch, stopCamera]);
 
   function handleClose() {
     setPanelOpen(false);
     stopCamera();
+    abortLocationsFetch();
     setScanMode("idle");
     handleReset();
   }
@@ -172,7 +178,7 @@ export function BarcodeScanPanel() {
     setScanMode("idle");
   }
 
-  const handleLookup = useCallback(async (barcode?: string) => {
+  async function handleLookup(barcode?: string) {
     const code = (barcode ?? barcodeInput).trim();
     if (!code) return;
 
@@ -192,7 +198,7 @@ export function BarcodeScanPanel() {
     } finally {
       setLoading(false);
     }
-  }, [barcodeInput]);
+  }
 
   function addItem(productId: string) {
     setSelected((prev) => {
@@ -319,7 +325,15 @@ export function BarcodeScanPanel() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setScanMode(scanMode === "camera" ? "idle" : "camera")}
+                    onClick={() => {
+                      if (scanMode === "camera") {
+                        stopCamera();
+                        setScanMode("idle");
+                        return;
+                      }
+                      setScanMode("camera");
+                      void startCamera();
+                    }}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-semibold transition ${
                       scanMode === "camera"
                         ? "border-indigo-500 bg-indigo-50 text-indigo-700"
@@ -332,7 +346,12 @@ export function BarcodeScanPanel() {
                   <button
                     type="button"
                     onClick={() => {
-                      setScanMode(scanMode === "manual" ? "idle" : "manual");
+                      if (scanMode === "manual") {
+                        setScanMode("idle");
+                        return;
+                      }
+                      setScanMode("manual");
+                      void ensureLocationsLoaded();
                       setTimeout(() => barcodeRef.current?.focus(), 100);
                     }}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-semibold transition ${

@@ -10,7 +10,7 @@ import type {
   UserRole,
 } from "@/types/report";
 
-const APP_NAME = "Sistem Manajemen Stok Gudang";
+const APP_NAME = "Sistem Manajemen Stok ";
 const PAGE_SIZE = 5;
 const DEFAULT_USER_NAME = "Budi Santoso";
 

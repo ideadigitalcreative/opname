@@ -1,6 +1,28 @@
 import { NextResponse } from "next/server";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
+import sharp from "sharp";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const runtime = "nodejs";
+
+const LOGO_PATH = path.join(process.cwd(), "public", "Logo-labkes.svg");
+let logoDataUrlPromise: Promise<string> | null = null;
+
+async function getLogoPngDataUrl(): Promise<string> {
+  if (!logoDataUrlPromise) {
+    logoDataUrlPromise = (async () => {
+      const svg = await readFile(LOGO_PATH);
+      const png = await sharp(svg)
+        .resize(360, 140, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 0 } })
+        .png()
+        .toBuffer();
+      return `data:image/png;base64,${png.toString("base64")}`;
+    })();
+  }
+  return logoDataUrlPromise;
+}
 
 function safeStr(val: unknown): string {
   return val === null || val === undefined ? "-" : String(val);
@@ -19,15 +41,44 @@ function getRelationField(row: unknown, field: string): unknown {
   return undefined;
 }
 
+function formatPeriodLabel(startDate: string, endDate: string): string {
+  if (!startDate && !endDate) return "-";
+  if (startDate && endDate) return `${startDate} - ${endDate}`;
+  return startDate ? `${startDate} -` : `- ${endDate}`;
+}
+
+function resolveDateRange(month: string, startDate: string, endDate: string) {
+  if (month) {
+    const [yearRaw, monthRaw] = month.split("-");
+    const year = Number(yearRaw);
+    const monthIndex = Number(monthRaw) - 1;
+    if (Number.isFinite(year) && Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
+      const start = new Date(Date.UTC(year, monthIndex, 1));
+      const end = new Date(Date.UTC(year, monthIndex + 1, 0));
+      const startLabel = start.toISOString().slice(0, 10);
+      const endLabel = end.toISOString().slice(0, 10);
+      return { startDate: startLabel, endDate: endLabel, label: `${startLabel} - ${endLabel}` };
+    }
+  }
+
+  return { startDate, endDate, label: formatPeriodLabel(startDate, endDate) };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const reportType = searchParams.get("type") ?? "products";
+  const startDate = searchParams.get("startDate") ?? "";
+  const endDate = searchParams.get("endDate") ?? "";
+  const month = searchParams.get("month") ?? "";
 
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return NextResponse.json({ error: "Supabase tidak tersedia" }, { status: 500 });
   }
+
+  const logoDataUrl = await getLogoPngDataUrl();
+  const resolvedRange = resolveDateRange(month, startDate, endDate);
 
   let headers: string[][] = [];
   let body: (string | number)[][] = [];
@@ -78,6 +129,108 @@ export async function GET(request: Request) {
           safeNum(item.qty),
         ];
       });
+      break;
+    }
+    case "stock-out": {
+      title = "Laporan Barang Keluar";
+      let txQuery = supabase
+        .from("stock_out_transactions")
+        .select("id, kode_transaksi, tanggal, status, keperluan, catatan, diambil_oleh, locations(kode_lokasi, nama_lokasi)");
+
+      if (resolvedRange.startDate) {
+        txQuery = txQuery.gte("tanggal", resolvedRange.startDate);
+      }
+
+      if (resolvedRange.endDate) {
+        txQuery = txQuery.lte("tanggal", resolvedRange.endDate);
+      }
+
+      const { data: transactions, error: txError } = await txQuery
+        .order("created_at", { ascending: false })
+        .limit(5000);
+
+      if (txError) {
+        return NextResponse.json({ error: `Gagal membaca transaksi barang keluar: ${txError.message}` }, { status: 500 });
+      }
+
+      const txIds = (transactions ?? []).map((row) => row.id);
+
+      const [{ data: itemRows, error: itemError }, { data: profiles, error: profileError }] = await Promise.all([
+        txIds.length > 0
+          ? supabase
+              .from("stock_out_items")
+              .select("transaction_id, qty, products(sku, nama_produk, units(nama_satuan))")
+              .in("transaction_id", txIds)
+          : Promise.resolve({ data: [], error: null }),
+        (() => {
+          const userIds = [...new Set((transactions ?? []).map((row) => row.diambil_oleh).filter(Boolean))] as string[];
+          if (userIds.length === 0) return Promise.resolve({ data: [], error: null });
+          return supabase.from("profiles").select("id, full_name").in("id", userIds);
+        })(),
+      ]);
+
+      if (itemError) {
+        return NextResponse.json({ error: `Gagal membaca item barang keluar: ${itemError.message}` }, { status: 500 });
+      }
+
+      if (profileError) {
+        return NextResponse.json({ error: `Gagal membaca data pengambil: ${profileError.message}` }, { status: 500 });
+      }
+
+      const txMap = new Map<string, (typeof transactions)[number]>();
+      for (const tx of transactions ?? []) {
+        txMap.set(tx.id, tx);
+      }
+
+      const nameMap = new Map<string, string>();
+      for (const p of profiles ?? []) {
+        nameMap.set(p.id, p.full_name ?? "User");
+      }
+
+      headers = [[
+        "No",
+        "Tanggal",
+        "Lokasi",
+        "SKU",
+        "Nama Produk",
+        "Qty",
+        "Satuan",
+        "Diambil Oleh",
+        "Status",
+        "Keperluan",
+        "Catatan",
+      ]];
+
+      body = (itemRows ?? []).map((row, index) => {
+        const tx = txMap.get(row.transaction_id);
+        const location = tx?.locations && typeof tx.locations === "object" && !Array.isArray(tx.locations)
+          ? (tx.locations as Record<string, unknown>)
+          : {};
+        const product = row.products && typeof row.products === "object" && !Array.isArray(row.products)
+          ? (row.products as Record<string, unknown>)
+          : {};
+        const units = product.units && typeof product.units === "object" && !Array.isArray(product.units)
+          ? (product.units as Record<string, unknown>)
+          : {};
+
+        const requesterName = tx?.diambil_oleh ? (nameMap.get(tx.diambil_oleh) ?? "User") : "User";
+        const locationLabel = `${safeStr(location.kode_lokasi)} - ${safeStr(location.nama_lokasi)}`;
+
+        return [
+          index + 1,
+          safeStr(tx?.tanggal),
+          locationLabel,
+          safeStr(product.sku),
+          safeStr(product.nama_produk),
+          safeNum(row.qty),
+          safeStr(units.nama_satuan),
+          requesterName,
+          safeStr(tx?.status),
+          safeStr(tx?.keperluan),
+          safeStr(tx?.catatan),
+        ];
+      });
+
       break;
     }
     case "full-report": {
@@ -147,13 +300,14 @@ export async function GET(request: Request) {
         const generatedAt = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
 
         function drawPageHeader(d: InstanceType<typeof jsPDF>) {
+          d.addImage(logoDataUrl, "PNG", 14, 10, 36, 14);
           d.setFontSize(16);
           d.setFont("helvetica", "bold");
-          d.text("Laporan Lengkap Stok Gudang", 14, 15);
+          d.text("Laporan Lengkap Stok Gudang", 54, 15);
           d.setFontSize(8);
           d.setFont("helvetica", "normal");
           d.setTextColor(100);
-          d.text(`Digenerate pada ${generatedAt}`, 14, 21);
+          d.text(`Digenerate pada ${generatedAt}`, 54, 21);
           d.setTextColor(0);
         }
 
@@ -161,7 +315,7 @@ export async function GET(request: Request) {
           d.setFontSize(7);
           d.setFont("helvetica", "normal");
           d.setTextColor(150);
-          d.text("Sistem Manajemen Stok Gudang", 14, pageHeight - 8);
+          d.text("Sistem Manajemen Stok ", 14, pageHeight - 8);
           d.text(`Halaman ${pageNum} dari ${totalPagesCount}`, pageWidth - 14, pageHeight - 8, { align: "right" });
           d.setDrawColor(200);
           d.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
@@ -198,7 +352,6 @@ export async function GET(request: Request) {
 
         const detailRows = (products ?? []).map((item, index) => {
           const cat = getRelationField(item.categories, "nama_kategori");
-          const unit = getRelationField(item.units, "nama_satuan");
           const masuk = masukMap.get(item.id) ?? 0;
           const keluar = keluarMap.get(item.id) ?? 0;
           const sisa = sisaStokMap.get(item.id) ?? 0;
@@ -297,15 +450,19 @@ export async function GET(request: Request) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const generatedAt = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
+    const tableFontSize = reportType === "stock-out" ? 6 : 8;
+    const periodLabel = resolvedRange.label;
 
     function drawHeader(d: InstanceType<typeof jsPDF>) {
+      d.addImage(logoDataUrl, "PNG", 14, 10, 36, 14);
       d.setFontSize(16);
       d.setFont("helvetica", "bold");
-      d.text(title, 14, 15);
+      d.text(title, 54, 15);
       d.setFontSize(8);
       d.setFont("helvetica", "normal");
       d.setTextColor(100);
-      d.text(`Digenerate pada ${generatedAt}`, 14, 21);
+      d.text(`Digenerate pada ${generatedAt}`, 54, 21);
+      d.text(`Periode : ${periodLabel}`, 54, 25);
       d.setTextColor(0);
     }
 
@@ -313,7 +470,7 @@ export async function GET(request: Request) {
       d.setFontSize(7);
       d.setFont("helvetica", "normal");
       d.setTextColor(150);
-      d.text("Sistem Manajemen Stok Gudang", 14, pageHeight - 8);
+      d.text("Sistem Manajemen Stok ", 14, pageHeight - 8);
       d.text(`Halaman ${pageNum} dari ${totalPagesCount}`, pageWidth - 14, pageHeight - 8, { align: "right" });
       d.setDrawColor(200);
       d.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
@@ -323,11 +480,11 @@ export async function GET(request: Request) {
     drawHeader(doc);
 
     autoTable(doc, {
-      startY: 26,
+      startY: 30,
       head: headers,
       body: body,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [79, 70, 229] },
+      styles: { fontSize: tableFontSize, cellPadding: 2 },
+      headStyles: { fillColor: [79, 70, 229], fontSize: tableFontSize },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       margin: { left: 14, right: 14, top: 25, bottom: 16 },
       didDrawPage(data) {

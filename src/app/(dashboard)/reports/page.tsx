@@ -4,7 +4,23 @@ import { StatCard } from "@/components/ui/stat-card";
 import { ExportButtons } from "@/components/reports/export-buttons";
 import { getDashboardOverview } from "@/lib/services/master-data";
 
-export default async function ReportsPage() {
+function getSearchValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const startDate = getSearchValue(resolvedSearchParams.startDate);
+  const endDate = getSearchValue(resolvedSearchParams.endDate);
+  const month = getSearchValue(resolvedSearchParams.month);
   const overview = await getDashboardOverview();
 
   return (
@@ -30,16 +46,55 @@ export default async function ReportsPage() {
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5">
         <h2 className="mb-3 text-base font-semibold text-slate-900 sm:text-lg">Export Data</h2>
+        <form method="get" className="mb-4 grid gap-3 sm:grid-cols-4">
+          <label className="space-y-1 text-xs font-medium text-slate-600">
+            Tanggal Mulai
+            <input
+              type="date"
+              name="startDate"
+              defaultValue={startDate}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+          </label>
+          <label className="space-y-1 text-xs font-medium text-slate-600">
+            Tanggal Selesai
+            <input
+              type="date"
+              name="endDate"
+              defaultValue={endDate}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+          </label>
+          <label className="space-y-1 text-xs font-medium text-slate-600">
+            Bulan
+            <input
+              type="month"
+              name="month"
+              defaultValue={month}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+            >
+              Terapkan
+            </button>
+          </div>
+        </form>
         <ExportButtons
           csvTypes={[
             { label: "Produk", type: "products" },
             { label: "Stok", type: "stocks" },
             { label: "Mutasi", type: "movements" },
+            { label: "Barang Keluar", type: "stock-out" },
             { label: "Opname", type: "opname" },
           ]}
           pdfTypes={[
             { label: "Produk", type: "products" },
             { label: "Stok", type: "stocks" },
+            { label: "Barang Keluar", type: "stock-out" },
             { label: "Lengkap", type: "full-report" },
           ]}
         />
@@ -54,7 +109,7 @@ export default async function ReportsPage() {
         rows={[
           ["Laporan Stok Saat Ini", "Posisi stok aktif seluruh produk berdasarkan lokasi.", "Tersedia"],
           ["Laporan Mutasi Stok", "Riwayat pergerakan stok masuk, keluar, koreksi, dan opname.", "Tersedia"],
-          ["Laporan Pengambilan Barang", "Riwayat barang keluar berdasarkan lokasi dan user pengambil.", "Tersedia"],
+          ["Laporan Barang Keluar", "Riwayat barang keluar lengkap dengan siapa yang mengambil barang.", "Tersedia"],
           ["Laporan Stock Opname", "Hasil hitung fisik, selisih, dan approval sesi opname.", "Dalam pengembangan"],
         ]}
       />

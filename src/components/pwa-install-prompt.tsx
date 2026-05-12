@@ -18,20 +18,18 @@ export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("pwa-install-dismissed") === "true";
+  });
 
   useEffect(() => {
     if (!isMobileDevice()) return;
 
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
-    if (dismissed === "true") {
-      setIsDismissed(true);
-    }
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      if (dismissed !== "true") {
+      if (localStorage.getItem("pwa-install-dismissed") !== "true") {
         setTimeout(() => setShowPrompt(true), 3000);
       }
     };

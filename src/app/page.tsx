@@ -257,7 +257,7 @@ export default async function Home({
             <span className="text-sm font-semibold text-slate-900">Stok Gudang</span>
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
-            Next.js + Supabase &middot; Sistem Manajemen Stok Gudang
+            Next.js + Supabase &middot; Sistem Manajemen Stok 
           </p>
         </footer>
       </div>

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Boxes, MapPin, TrendingDown, TrendingUp } from "lucide-react";
 
 import { DataTable } from "@/components/ui/data-table";
@@ -24,12 +25,12 @@ export default async function ProductDetailPage({
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center gap-3">
-        <a
+        <Link
           href="/products"
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
         >
           <ArrowLeft className="h-4 w-4" />
-        </a>
+        </Link>
         <PageHeader
           eyebrow="Detail Barang"
           title={product.namaProduk}

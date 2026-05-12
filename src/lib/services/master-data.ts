@@ -545,8 +545,8 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
 
   const [
     { data: product, error: productError },
-    { data: stocks, error: stockError },
-    { data: movements, error: movementError },
+    { data: stocks },
+    { data: movements },
   ] = await Promise.all([
     session.supabase
       .from("products")

@@ -14,9 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistem Manajemen Stok Gudang",
+  title: "Sistem Manajemen Stok ",
   description: "Dashboard laporan stok, mutasi, pengambilan, dan stock opname.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [{ url: "/favicon-op.png", type: "image/png" }],
+    shortcut: [{ url: "/favicon-op.png", type: "image/png" }],
+    apple: [{ url: "/favicon-op.png", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -45,6 +50,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <link rel="icon" href="/favicon-op.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon-op.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body className="h-full">

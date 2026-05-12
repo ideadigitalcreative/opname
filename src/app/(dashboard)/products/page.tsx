@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import Link from "next/link";
 import { DeleteButton } from "@/components/ui/delete-button";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -225,12 +226,12 @@ export default async function ProductsPage({
               {editingProduct ? "Simpan perubahan" : "Simpan barang"}
             </Button>
             {editingProduct && (
-              <a
+              <Link
                 href="/products"
                 className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto"
               >
                 Batal
-              </a>
+              </Link>
             )}
           </div>
         </form>
@@ -259,18 +260,18 @@ export default async function ProductsPage({
             item.minimumStok,
             item.statusAktif ? "Aktif" : "Nonaktif",
             <span key={item.id} className="inline-flex gap-1">
-              <a
+              <Link
                 href={`/products/${item.id}`}
                 className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
               >
                 Detail
-              </a>
-              <a
+              </Link>
+              <Link
                 href={`/products?edit=${item.id}#form-barang`}
                 className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
               >
                 Edit
-              </a>
+              </Link>
               <DeleteButton action={deleteProductAction} itemId={item.id} itemLabel={item.namaProduk} />
             </span>,
           ])}

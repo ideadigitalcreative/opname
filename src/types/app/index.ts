@@ -41,6 +41,11 @@ export interface NavigationItem {
   href: string;
   icon: LucideIcon;
   roles: AppRole[];
+  children?: Array<{
+    title: string;
+    href: string;
+    roles: AppRole[];
+  }>;
 }
 
 export interface Category {

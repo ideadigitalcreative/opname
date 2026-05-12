@@ -1,5 +1,4 @@
 import {
-  Archive,
   Boxes,
   ChartColumn,
   ClipboardList,
@@ -7,10 +6,8 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
-  MapPin,
   ScanBarcode,
   Settings,
-  Tags,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -62,10 +59,18 @@ const MOCK_USERS: Record<AppRole, UserProfile> = {
 
 export const APP_NAVIGATION: NavigationItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "petugas_gudang"] },
-  { title: "Barang", href: "/products", icon: Boxes, roles: ["admin"] },
-  { title: "Kategori", href: "/categories", icon: Tags, roles: ["admin"] },
-  { title: "Satuan", href: "/units", icon: Archive, roles: ["admin"] },
-  { title: "Lokasi", href: "/locations", icon: MapPin, roles: ["admin"] },
+  {
+    title: "Master Data",
+    href: "/products",
+    icon: Boxes,
+    roles: ["admin"],
+    children: [
+      { title: "Barang", href: "/products", roles: ["admin"] },
+      { title: "Kategori", href: "/categories", roles: ["admin"] },
+      { title: "Satuan", href: "/units", roles: ["admin"] },
+      { title: "Lokasi", href: "/locations", roles: ["admin"] },
+    ],
+  },
   { title: "Stok Per Lokasi", href: "/product-stocks", icon: Warehouse, roles: ["admin", "petugas_gudang"] },
   { title: "Stok Masuk", href: "/stock-in", icon: LogIn, roles: ["admin", "petugas_gudang"] },
   { title: "Ambil Barang", href: "/stock-out", icon: ScanBarcode, roles: ["admin", "petugas_gudang", "user"] },
@@ -82,7 +87,16 @@ export function getMockUser(role: AppRole): UserProfile {
 }
 
 export function getNavigationByRole(role: AppRole) {
-  return APP_NAVIGATION.filter((item) => item.roles.includes(role));
+  return APP_NAVIGATION.flatMap((item) => {
+    if (!item.children) {
+      return item.roles.includes(role) ? [item] : [];
+    }
+
+    const children = item.children.filter((child) => child.roles.includes(role));
+    if (children.length === 0) return [];
+
+    return [{ ...item, children }];
+  });
 }
 
 export function getDashboardStats(role: AppRole): DashboardStat[] {

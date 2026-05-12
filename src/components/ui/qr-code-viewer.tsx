@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, QrCode, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface QRCodeViewerProps {
   locationName: string;
@@ -10,7 +10,6 @@ interface QRCodeViewerProps {
 
 export function QRCodeViewer({ locationName, barcodeValue }: QRCodeViewerProps) {
   const [open, setOpen] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const qrUrl = `/api/qr?text=${encodeURIComponent(barcodeValue)}&size=400`;
 

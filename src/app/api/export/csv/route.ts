@@ -131,6 +131,97 @@ export async function GET(request: Request) {
       });
       break;
     }
+    case "stock-out": {
+      const { data: transactions, error: txError } = await supabase
+        .from("stock_out_transactions")
+        .select("id, kode_transaksi, tanggal, status, keperluan, catatan, diambil_oleh, locations(kode_lokasi, nama_lokasi)")
+        .order("created_at", { ascending: false })
+        .limit(5000);
+
+      if (txError) {
+        return NextResponse.json({ error: `Gagal membaca transaksi barang keluar: ${txError.message}` }, { status: 500 });
+      }
+
+      const txIds = (transactions ?? []).map((row) => row.id);
+
+      const [{ data: itemRows, error: itemError }, { data: profiles, error: profileError }] = await Promise.all([
+        txIds.length > 0
+          ? supabase
+              .from("stock_out_items")
+              .select("transaction_id, qty, products(sku, nama_produk, units(nama_satuan))")
+              .in("transaction_id", txIds)
+          : Promise.resolve({ data: [], error: null }),
+        (() => {
+          const userIds = [...new Set((transactions ?? []).map((row) => row.diambil_oleh).filter(Boolean))] as string[];
+          if (userIds.length === 0) return Promise.resolve({ data: [], error: null });
+          return supabase.from("profiles").select("id, full_name").in("id", userIds);
+        })(),
+      ]);
+
+      if (itemError) {
+        return NextResponse.json({ error: `Gagal membaca item barang keluar: ${itemError.message}` }, { status: 500 });
+      }
+
+      if (profileError) {
+        return NextResponse.json({ error: `Gagal membaca data pengambil: ${profileError.message}` }, { status: 500 });
+      }
+
+      const txMap = new Map<string, (typeof transactions)[number]>();
+      for (const tx of transactions ?? []) {
+        txMap.set(tx.id, tx);
+      }
+
+      const nameMap = new Map<string, string>();
+      for (const p of profiles ?? []) {
+        nameMap.set(p.id, p.full_name ?? "User");
+      }
+
+      headers = [
+        "Kode Transaksi",
+        "Tanggal",
+        "Lokasi",
+        "SKU",
+        "Nama Produk",
+        "Qty",
+        "Satuan",
+        "Diambil Oleh",
+        "Status",
+        "Keperluan",
+        "Catatan",
+      ];
+
+      rows = (itemRows ?? []).map((row) => {
+        const tx = txMap.get(row.transaction_id);
+        const location = tx?.locations && typeof tx.locations === "object" && !Array.isArray(tx.locations)
+          ? (tx.locations as Record<string, unknown>)
+          : {};
+        const product = row.products && typeof row.products === "object" && !Array.isArray(row.products)
+          ? (row.products as Record<string, unknown>)
+          : {};
+        const units = product.units && typeof product.units === "object" && !Array.isArray(product.units)
+          ? (product.units as Record<string, unknown>)
+          : {};
+
+        const requesterName = tx?.diambil_oleh ? (nameMap.get(tx.diambil_oleh) ?? "User") : "User";
+        const locationLabel = `${location.kode_lokasi ?? "-"} - ${location.nama_lokasi ?? "-"}`;
+
+        return [
+          tx?.kode_transaksi ?? "-",
+          tx?.tanggal ?? "-",
+          locationLabel,
+          (product.sku as string) ?? "-",
+          (product.nama_produk as string) ?? "-",
+          String(row.qty ?? 0),
+          (units.nama_satuan as string) ?? "-",
+          requesterName,
+          tx?.status ?? "-",
+          tx?.keperluan ?? "",
+          tx?.catatan ?? "",
+        ];
+      });
+
+      break;
+    }
     default:
       return NextResponse.json({ error: "Tipe laporan tidak valid" }, { status: 400 });
   }

@@ -1,4 +1,4 @@
-# Rencana Implementasi - Sistem Manajemen Stok Gudang
+# Rencana Implementasi - Sistem Manajemen Stok 
 
 > File ini digunakan untuk tracking progress pengerjaan aplikasi.
 > Update checklist setiap kali ada modul yang selesai dikerjakan.
@@ -9,7 +9,7 @@
 
 | Item | Detail |
 |------|--------|
-| Nama | Sistem Manajemen Stok Gudang |
+| Nama | Sistem Manajemen Stok  |
 | Stack | Next.js 16, TypeScript, Tailwind CSS, Supabase |
 | Database | PostgreSQL (Supabase) |
 | Script Setup | `supabase/setup-database.sql` (jalankan di SQL Editor) |
