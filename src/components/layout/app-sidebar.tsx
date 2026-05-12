@@ -15,7 +15,7 @@ export function AppSidebar({ currentPath, role }: AppSidebarProps) {
   const navigation = getNavigationByRole(role);
 
   return (
-    <aside className="hidden h-full w-80 shrink-0 overflow-hidden border-r border-slate-200 bg-white text-slate-900 lg:flex lg:flex-col">
+    <aside className="hidden h-full w-72 shrink-0 overflow-hidden border-r border-slate-200 bg-white text-slate-900 lg:flex lg:flex-col">
       <div className="shrink-0 px-4 pt-6 pb-4">
         <div className="rounded-2xl bg-slate-50 px-4 py-4">
           <div className="flex justify-center">
