@@ -45,6 +45,23 @@ interface ProductFormOptionsResult {
   note?: string;
 }
 
+export interface ProductFormProduct {
+  id: string;
+  sku: string;
+  barcodeProduk: string;
+  namaProduk: string;
+  kategoriId: string;
+  satuanId: string;
+  minimumStok: number;
+  statusAktif: boolean;
+}
+
+export interface ProductFormProductResult {
+  source: DataSource;
+  note?: string;
+  product: ProductFormProduct | null;
+}
+
 interface StockInFormOptionsResult {
   products: SelectOption[];
   locations: SelectOption[];
@@ -379,7 +396,10 @@ function getRelationName(
   return "-";
 }
 
-export async function getProductFormOptions(): Promise<ProductFormOptionsResult> {
+export async function getProductFormOptions(options?: {
+  includeCategoryId?: string;
+  includeUnitId?: string;
+}): Promise<ProductFormOptionsResult> {
   const session = await getAuthenticatedSupabase();
 
   if (!session) {
@@ -414,10 +434,99 @@ export async function getProductFormOptions(): Promise<ProductFormOptionsResult>
     };
   }
 
+  const mergedCategories = categories.slice();
+  const mergedUnits = units.slice();
+
+  const includeCategoryId = options?.includeCategoryId;
+  if (includeCategoryId && !mergedCategories.some((item) => item.id === includeCategoryId)) {
+    const { data: extraCategory } = await session.supabase
+      .from("categories")
+      .select("id, nama_kategori")
+      .eq("id", includeCategoryId)
+      .maybeSingle();
+
+    if (extraCategory) {
+      mergedCategories.push(extraCategory);
+    }
+  }
+
+  const includeUnitId = options?.includeUnitId;
+  if (includeUnitId && !mergedUnits.some((item) => item.id === includeUnitId)) {
+    const { data: extraUnit } = await session.supabase
+      .from("units")
+      .select("id, nama_satuan")
+      .eq("id", includeUnitId)
+      .maybeSingle();
+
+    if (extraUnit) {
+      mergedUnits.push(extraUnit);
+    }
+  }
+
   return {
-    categories: categories.map((item) => ({ id: item.id, label: item.nama_kategori })),
-    units: units.map((item) => ({ id: item.id, label: item.nama_satuan })),
+    categories: mergedCategories
+      .map((item) => ({ id: item.id, label: item.nama_kategori }))
+      .sort((a, b) => a.label.localeCompare(b.label, "id-ID")),
+    units: mergedUnits
+      .map((item) => ({ id: item.id, label: item.nama_satuan }))
+      .sort((a, b) => a.label.localeCompare(b.label, "id-ID")),
     source: "supabase",
+  };
+}
+
+export async function getProductFormProduct(productId: string): Promise<ProductFormProductResult> {
+  const session = await getAuthenticatedSupabase();
+
+  if (!session) {
+    const mockProduct = mockProducts.find((p) => p.id === productId);
+    if (!mockProduct) return { source: "mock", note: getFallbackNote(), product: null };
+
+    const kategoriId =
+      mockCategories.find((c) => c.namaKategori === mockProduct.kategori)?.id ?? "";
+    const satuanId = mockUnits.find((u) => u.namaSatuan === mockProduct.satuan)?.id ?? "";
+
+    return {
+      source: "mock",
+      note: getFallbackNote(),
+      product: {
+        id: mockProduct.id,
+        sku: mockProduct.sku,
+        barcodeProduk: mockProduct.barcodeProduk ?? "",
+        namaProduk: mockProduct.namaProduk,
+        kategoriId,
+        satuanId,
+        minimumStok: mockProduct.minimumStok,
+        statusAktif: mockProduct.statusAktif,
+      },
+    };
+  }
+
+  const { data, error } = await session.supabase
+    .from("products")
+    .select("id, sku, barcode_produk, nama_produk, kategori_id, satuan_id, minimum_stok, status_aktif")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      source: "supabase",
+      note: `Gagal membaca detail produk: ${error?.message ?? "Produk tidak ditemukan"}`,
+      product: null,
+    };
+  }
+
+  return {
+    source: "supabase",
+    product: {
+      id: data.id,
+      sku: data.sku,
+      barcodeProduk: data.barcode_produk ?? "",
+      namaProduk: data.nama_produk ?? "-",
+      kategoriId: data.kategori_id ?? "",
+      satuanId: data.satuan_id ?? "",
+      minimumStok: Number(data.minimum_stok ?? 0),
+      statusAktif: Boolean(data.status_aktif),
+    },
   };
 }
 
@@ -478,6 +587,7 @@ export async function getProductsCollection(): Promise<CollectionResult<Product>
 }
 
 export interface ProductDetailStock {
+  locationId: string;
   locationName: string;
   barcode: string;
   qty: number;
@@ -522,7 +632,7 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
 
     const mockStocks = mockProductStocks
       .filter((s) => s.productName === mockProduct.namaProduk)
-      .map((s) => ({ locationName: s.locationName, barcode: s.barcodeLocation, qty: s.qty }));
+      .map((s) => ({ locationId: "", locationName: s.locationName, barcode: s.barcodeLocation, qty: s.qty }));
 
     return {
       source: "mock",
@@ -555,7 +665,7 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
       .maybeSingle(),
     session.supabase
       .from("product_stocks")
-      .select("qty, locations(nama_lokasi, barcode_value)")
+      .select("qty, location_id, locations(nama_lokasi, barcode_value)")
       .eq("product_id", productId),
     session.supabase
       .from("stock_movements")
@@ -576,6 +686,7 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
           ? (row.locations as Record<string, unknown>)
           : {};
       return {
+        locationId: row.location_id ?? "",
         locationName: typeof loc.nama_lokasi === "string" ? loc.nama_lokasi : "-",
         barcode: typeof loc.barcode_value === "string" ? loc.barcode_value : "-",
         qty: Number(row.qty ?? 0),

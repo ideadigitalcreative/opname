@@ -74,6 +74,7 @@ export default async function CategoriesPage({
         </div>
 
         <form
+          key={editingCategory?.id ?? "new-category"}
           action={editingCategory ? updateCategoryAction : createCategoryAction}
           className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >

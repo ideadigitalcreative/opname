@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
-import { getProductFormOptions, getProductsCollection } from "@/lib/services/master-data";
+import { getProductFormOptions, getProductFormProduct, getProductsCollection } from "@/lib/services/master-data";
 import { createProductAction, updateProductAction, deleteProductAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +33,14 @@ export default async function ProductsPage({
   const flashMessage = getSearchValue(resolvedSearchParams.message);
   const editId = getSearchValue(resolvedSearchParams.edit);
 
+  const editResult = editId ? await getProductFormProduct(editId) : null;
+
   const [productsResult, formOptions] = await Promise.all([
     getProductsCollection(),
-    getProductFormOptions(),
+    getProductFormOptions({
+      includeCategoryId: editResult?.product?.kategoriId,
+      includeUnitId: editResult?.product?.satuanId,
+    }),
   ]);
 
   const filteredProducts = productsResult.items.filter((item) => {
@@ -52,7 +57,8 @@ export default async function ProductsPage({
     return matchesQuery && matchesStatus;
   });
 
-  const editingProduct = editId ? productsResult.items.find((p) => p.id === editId) : null;
+  const editingProduct =
+    editResult?.product ?? (editId ? productsResult.items.find((p) => p.id === editId) : null);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -129,6 +135,7 @@ export default async function ProductsPage({
         </div>
 
         <form
+          key={editingProduct?.id ?? "new-product"}
           action={editingProduct ? updateProductAction : createProductAction}
           className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3"
         >

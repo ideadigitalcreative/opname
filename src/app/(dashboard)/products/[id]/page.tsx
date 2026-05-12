@@ -6,37 +6,74 @@ import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getProductDetail } from "@/lib/services/master-data";
+import { getProductDetail, getStockInFormOptions } from "@/lib/services/master-data";
+import { setInitialStockAction } from "../actions";
+import { SetInitialStockForm } from "./set-initial-stock-form";
+
+function getSearchValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
 
 export default async function ProductDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const result = await getProductDetail(id);
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const flashStatus = getSearchValue(resolvedSearchParams.statusType);
+  const flashMessage = getSearchValue(resolvedSearchParams.message);
+
+  const [result, stockInOptions] = await Promise.all([getProductDetail(id), getStockInFormOptions()]);
 
   if (!result.product) {
     notFound();
   }
 
   const product = result.product;
+  const locations = stockInOptions.locations;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/products"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <PageHeader
+            eyebrow="Detail Barang"
+            title={product.namaProduk}
+            description={`${product.sku} | ${product.kategori} | ${product.satuan}`}
+          />
+        </div>
         <Link
-          href="/products"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+          href={`/products?edit=${product.id}#form-barang`}
+          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:h-10 sm:px-4"
         >
-          <ArrowLeft className="h-4 w-4" />
+          Edit Barang
         </Link>
-        <PageHeader
-          eyebrow="Detail Barang"
-          title={product.namaProduk}
-          description={`${product.sku} | ${product.kategori} | ${product.satuan}`}
-        />
       </div>
+
+      {flashMessage ? (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm sm:rounded-2xl ${
+            flashStatus === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {flashMessage}
+        </div>
+      ) : null}
 
       {result.note ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:rounded-2xl">
@@ -93,6 +130,20 @@ export default async function ProductDetailPage({
           </div>
         </div>
       </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5">
+        <h2 className="text-base font-semibold text-slate-900 sm:text-lg">Set Stok Awal</h2>
+        <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+          Set qty stok per lokasi secara langsung. Perubahan dicatat sebagai koreksi (bukan transaksi stok masuk).
+        </p>
+
+        <SetInitialStockForm
+          productId={product.id}
+          locations={locations}
+          currentStocks={product.stocks.map((s) => ({ locationId: s.locationId, qty: s.qty }))}
+          action={setInitialStockAction}
+        />
+      </section>
 
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-[1fr_1.5fr]">
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5">
