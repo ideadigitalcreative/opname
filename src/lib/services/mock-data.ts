@@ -73,7 +73,7 @@ export const APP_NAVIGATION: NavigationItem[] = [
   },
   { title: "Stok Per Lokasi", href: "/product-stocks", icon: Warehouse, roles: ["admin", "petugas_gudang"] },
   { title: "Stok Masuk", href: "/stock-in", icon: LogIn, roles: ["admin", "petugas_gudang"] },
-  { title: "Ambil Barang", href: "/stock-out", icon: ScanBarcode, roles: ["admin", "petugas_gudang", "user"] },
+  { title: "Ambil Barang", href: "/stock-out", icon: ScanBarcode, roles: ["petugas_gudang", "user"] },
   { title: "Mutasi Stok", href: "/movements", icon: LogOut, roles: ["admin", "petugas_gudang"] },
   { title: "Stock Opname", href: "/opname/sessions", icon: ClipboardList, roles: ["admin", "petugas_gudang"] },
   { title: "Laporan", href: "/reports", icon: ChartColumn, roles: ["admin", "petugas_gudang"] },
