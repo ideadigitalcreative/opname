@@ -13,7 +13,8 @@ import {
   ScanBarcode,
   ShieldCheck,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { getDashboardOverview } from "@/lib/services/master-data";
 import { getCurrentRoleFromCookie } from "@/lib/supabase/auth";
@@ -36,35 +37,38 @@ function StatHighlight({
   icon: ReactNode;
   tone: "indigo" | "emerald" | "amber" | "rose";
 }) {
-  const bg: Record<string, string> = {
-    indigo: "bg-indigo-50 border-indigo-200",
-    emerald: "bg-emerald-50 border-emerald-200",
-    amber: "bg-amber-50 border-amber-200",
-    rose: "bg-rose-50 border-rose-200",
-  };
-  const iconBg: Record<string, string> = {
-    indigo: "bg-indigo-100 text-indigo-600",
-    emerald: "bg-emerald-100 text-emerald-600",
-    amber: "bg-amber-100 text-amber-600",
-    rose: "bg-rose-100 text-rose-600",
+  const iconColor: Record<string, string> = {
+    indigo: "text-indigo-600",
+    emerald: "text-emerald-600",
+    amber: "text-amber-600",
+    rose: "text-rose-600",
   };
 
+  const displayIcon = isValidElement(icon)
+    ? cloneElement(icon as ReactElement<{ className?: string; strokeWidth?: number }>, {
+        className: `h-10 w-10 ${iconColor[tone]}`,
+        strokeWidth: 1.5,
+      })
+    : icon;
+
   return (
-    <div className={`flex items-center gap-3 rounded-xl border p-3 sm:gap-4 sm:p-4 ${bg[tone]}`}>
-      <div className={`shrink-0 rounded-lg p-2 ${iconBg[tone]}`}>{icon}</div>
-      <div className="min-w-0">
-        <p className="truncate text-xs text-slate-500 sm:text-sm">{label}</p>
-        <p className="text-xl font-semibold text-slate-900 sm:text-2xl">{value}</p>
+    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-200 p-4 sm:rounded-2xl sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-xs text-slate-500 sm:text-sm">{label}</p>
+          <p className="text-3xl font-semibold text-slate-900 sm:text-4xl">{value}</p>
+        </div>
+        <div className="shrink-0">{displayIcon}</div>
       </div>
     </div>
   );
 }
 
 const quickActions = [
-  { label: "Stok Masuk", href: "/stock-in#form-stok-masuk", icon: LogIn, color: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100" },
-  { label: "Ambil Barang", href: "/stock-out", icon: ScanBarcode, color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100" },
-  { label: "Opname", href: "/opname/sessions", icon: ClipboardIcon, color: "bg-amber-50 text-amber-600 hover:bg-amber-100" },
-  { label: "Laporan", href: "/reports", icon: FileText, color: "bg-rose-50 text-rose-600 hover:bg-rose-100" },
+  { label: "Stok Masuk", href: "/stock-in#form-stok-masuk", icon: LogIn, tone: "indigo" as const },
+  { label: "Ambil Barang", href: "/stock-out", icon: ScanBarcode, tone: "emerald" as const },
+  { label: "Opname", href: "/opname/sessions", icon: ClipboardIcon, tone: "amber" as const },
+  { label: "Laporan", href: "/reports", icon: FileText, tone: "rose" as const },
 ];
 
 function ClipboardIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -113,9 +117,19 @@ export default async function DashboardPage() {
             <a
               key={action.label}
               href={action.href}
-              className={`flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium transition sm:px-4 sm:py-3 ${action.color}`}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:rounded-2xl sm:px-5 sm:py-3.5"
             >
-              <action.icon className="h-4 w-4 shrink-0" />
+              <action.icon
+                className={`h-4 w-4 shrink-0 ${
+                  action.tone === "indigo"
+                    ? "text-indigo-600"
+                    : action.tone === "emerald"
+                      ? "text-emerald-600"
+                      : action.tone === "amber"
+                        ? "text-amber-600"
+                        : "text-rose-600"
+                }`}
+              />
               <span className="truncate">{action.label}</span>
             </a>
           ))}
