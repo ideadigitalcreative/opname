@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface AvailableItem {
   productId: string;
-  sku: string;
+  sku?: string;
   namaProduk: string;
   satuan: string;
   qtyTersedia: number;
@@ -117,7 +117,7 @@ export function StockOutMultiForm({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-800">{item.namaProduk}</p>
                   <p className="text-xs text-slate-500">
-                    {item.sku} | Tersedia: {item.qtyTersedia} {item.satuan}
+                    {item.sku ?? "-"} | Tersedia: {item.qtyTersedia} {item.satuan}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export function StockOutMultiForm({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-800">{item.namaProduk}</p>
                   <p className="text-xs text-slate-400">
-                    {item.sku} | {item.qtyTersedia} {item.satuan}
+                    {item.sku ?? "-"} | {item.qtyTersedia} {item.satuan}
                   </p>
                 </div>
                 <Plus className="h-4 w-4 shrink-0 text-indigo-500" />

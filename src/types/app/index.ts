@@ -80,7 +80,7 @@ export interface Location {
 
 export interface Product {
   id: string;
-  sku: string;
+  sku?: string;
   barcodeProduk: string;
   namaProduk: string;
   kategoriId: string;

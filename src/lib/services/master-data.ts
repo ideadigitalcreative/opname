@@ -47,7 +47,7 @@ interface ProductFormOptionsResult {
 
 export interface ProductFormProduct {
   id: string;
-  sku: string;
+  sku?: string;
   barcodeProduk: string;
   namaProduk: string;
   kategoriId: string;
@@ -71,7 +71,7 @@ interface StockInFormOptionsResult {
 
 interface LandingProductRow {
   id: string;
-  sku: string;
+  sku?: string;
   namaProduk: string;
   minimumStok: number;
   totalStok: number;
@@ -115,7 +115,7 @@ interface StockOutLocationResult {
 
 interface StockOutAvailableItem {
   productId: string;
-  sku: string;
+  sku?: string;
   namaProduk: string;
   satuan: string;
   qtyTersedia: number;
@@ -519,7 +519,7 @@ export async function getProductFormProduct(productId: string): Promise<ProductF
     source: "supabase",
     product: {
       id: data.id,
-      sku: data.sku,
+      sku: data.sku ?? undefined,
       barcodeProduk: data.barcode_produk ?? "",
       namaProduk: data.nama_produk ?? "-",
       kategoriId: data.kategori_id ?? "",
@@ -571,7 +571,7 @@ export async function getProductsCollection(): Promise<CollectionResult<Product>
     source: "supabase",
     items: products.map((item) => ({
       id: item.id,
-      sku: item.sku,
+      sku: item.sku ?? undefined,
       barcodeProduk: item.barcode_produk ?? "-",
       namaProduk: item.nama_produk ?? "-",
       kategoriId: item.kategori_id ?? "",
@@ -605,7 +605,7 @@ export interface ProductDetailMovement {
 
 export interface ProductDetail {
   id: string;
-  sku: string;
+  sku?: string;
   barcodeProduk: string;
   namaProduk: string;
   kategori: string;
@@ -635,22 +635,22 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
       .map((s) => ({ locationId: "", locationName: s.locationName, barcode: s.barcodeLocation, qty: s.qty }));
 
     return {
-      source: "mock",
-      note: getFallbackNote(),
-      product: {
-        id: mockProduct.id,
-        sku: mockProduct.sku,
-        barcodeProduk: mockProduct.barcodeProduk,
-        namaProduk: mockProduct.namaProduk,
-        kategori: mockProduct.kategori,
-        satuan: mockProduct.satuan,
-        minimumStok: mockProduct.minimumStok,
-        totalStok: mockProduct.totalStok,
-        statusAktif: mockProduct.statusAktif,
-        stocks: mockStocks,
-        movements: [],
-      },
-    };
+    source: "mock",
+    note: getFallbackNote(),
+    product: {
+      id: mockProduct.id,
+      sku: mockProduct.sku ?? undefined,
+      barcodeProduk: mockProduct.barcodeProduk,
+      namaProduk: mockProduct.namaProduk,
+      kategori: mockProduct.kategori,
+      satuan: mockProduct.satuan,
+      minimumStok: mockProduct.minimumStok,
+      totalStok: mockProduct.totalStok,
+      statusAktif: mockProduct.statusAktif,
+      stocks: mockStocks,
+      movements: [],
+    },
+  };
   }
 
   const [
@@ -716,7 +716,7 @@ export async function getProductDetail(productId: string): Promise<ProductDetail
     source: "supabase",
     product: {
       id: product.id,
-      sku: product.sku,
+      sku: product.sku ?? undefined,
       barcodeProduk: product.barcode_produk ?? "-",
       namaProduk: product.nama_produk,
       kategori: getRelationName(product.categories, "nama_kategori"),
@@ -1166,7 +1166,7 @@ export async function getLandingOverview(): Promise<LandingOverviewResult> {
 
   const mappedProducts: LandingProductRow[] = products.map((item) => ({
     id: item.id,
-    sku: item.sku,
+    sku: item.sku ?? undefined,
     namaProduk: item.nama_produk,
     minimumStok: Number(item.minimum_stok ?? 0),
     totalStok: stockMap.get(item.id) ?? 0,
@@ -1262,7 +1262,7 @@ export interface DashboardActivityRow {
 
 export interface DashboardLowStockRow {
   id: string;
-  sku: string;
+  sku?: string;
   namaProduk: string;
   totalStok: number;
   minimumStok: number;
@@ -1295,7 +1295,7 @@ export async function getDashboardOverview(): Promise<DashboardResult> {
     }
     const lowStockProducts = mockProducts
       .filter((p) => (byId.get(p.id) ?? 0) <= p.minimumStok)
-      .map((p) => ({ id: p.id, sku: p.sku, namaProduk: p.namaProduk, totalStok: byId.get(p.id) ?? 0, minimumStok: p.minimumStok }));
+      .map((p) => ({ id: p.id, sku: p.sku ?? undefined, namaProduk: p.namaProduk, totalStok: byId.get(p.id) ?? 0, minimumStok: p.minimumStok }));
     const lowStockCount = lowStockProducts.length;
     const stokHabisCount = mockProducts.filter((p) => (byId.get(p.id) ?? 0) === 0).length;
 

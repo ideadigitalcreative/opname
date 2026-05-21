@@ -47,7 +47,7 @@ export default async function ProductsPage({
     const matchesQuery =
       !query ||
       item.namaProduk.toLowerCase().includes(query) ||
-      item.sku.toLowerCase().includes(query);
+      (item.sku && item.sku.toLowerCase().includes(query));
 
     const matchesStatus =
       !status ||
@@ -147,7 +147,6 @@ export default async function ProductsPage({
             <span className="font-medium text-slate-700">SKU</span>
             <input
               name="sku"
-              required
               defaultValue={editingProduct?.sku ?? ""}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 sm:rounded-xl sm:px-4 sm:py-2.5"
             />
@@ -259,7 +258,7 @@ export default async function ProductsPage({
           ]}
           rows={filteredProducts.map((item, index) => [
             index + 1,
-            item.sku,
+            item.sku ?? "-",
             item.namaProduk,
             item.kategori,
             item.satuan,

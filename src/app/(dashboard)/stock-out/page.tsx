@@ -39,7 +39,7 @@ export default async function StockOutPage({
   const availableItems = (availableItemsResult?.items ?? []).filter((item) => {
     if (!query) return true;
     return (
-      item.namaProduk.toLowerCase().includes(query) || item.sku.toLowerCase().includes(query)
+      item.namaProduk.toLowerCase().includes(query) || (item.sku && item.sku.toLowerCase().includes(query))
     );
   });
 

@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/lib/utils/audit-log";
 
 const productSchema = z.object({
-  sku: z.string().trim().min(1, "SKU wajib diisi"),
+  sku: z.string().trim().optional(),
   namaProduk: z.string().trim().min(1, "Nama produk wajib diisi"),
   barcodeProduk: z.string().trim().optional(),
   kategoriId: z.string().uuid("Kategori wajib dipilih"),
@@ -67,7 +67,7 @@ export async function createProductAction(formData: FormData) {
   const payload = parsed.data;
 
   const { error } = await supabase.from("products").insert({
-    sku: payload.sku,
+    sku: payload.sku && payload.sku.length > 0 ? payload.sku : null,
     barcode_produk:
       payload.barcodeProduk && payload.barcodeProduk.length > 0 ? payload.barcodeProduk : null,
     nama_produk: payload.namaProduk,
@@ -131,7 +131,7 @@ export async function updateProductAction(formData: FormData) {
   const { error } = await supabase
     .from("products")
     .update({
-      sku: payload.sku,
+      sku: payload.sku && payload.sku.length > 0 ? payload.sku : null,
       barcode_produk:
         payload.barcodeProduk && payload.barcodeProduk.length > 0 ? payload.barcodeProduk : null,
       nama_produk: payload.namaProduk,
